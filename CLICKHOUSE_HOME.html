@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClickHouse Introduction</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 48px auto;
+      padding: 0 20px;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+    h1, h2 {
+      color: #f8fafc;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 34px;
+    }
+    p, li {
+      line-height: 1.7;
+      color: #cbd5e1;
+    }
+    code {
+      background: #1e293b;
+      padding: 2px 6px;
+      border-radius: 5px;
+      color: #e2e8f0;
+    }
+    .tag {
+      display: inline-block;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #1d4ed8;
+      color: #eff6ff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>ClickHouse 数据库简介</h1>
+      <span class="tag">OLAP</span>
+      <span class="tag">Columnar</span>
+      <span class="tag">High Performance</span>
+      <p>
+        ClickHouse 是一个开源列式数据库，专注于在线分析处理（OLAP）场景，
+        适合海量数据的实时查询、统计分析和日志检索。
+      </p>
+
+      <h2>核心特点</h2>
+      <ul>
+        <li>列式存储：仅读取需要的列，显著降低 I/O。</li>
+        <li>高压缩比：结合编码与压缩算法，节省存储成本。</li>
+        <li>向量化执行：对 CPU 更友好，聚合查询速度快。</li>
+        <li>分布式能力：支持分片与副本，横向扩展方便。</li>
+        <li>SQL 友好：支持丰富函数与聚合能力。</li>
+      </ul>
+
+      <h2>典型场景</h2>
+      <ul>
+        <li>用户行为分析与埋点报表</li>
+        <li>日志与可观测性数据查询</li>
+        <li>业务指标看板与实时报表</li>
+        <li>广告、风控与运营分析</li>
+      </ul>
+
+      <h2>快速示例</h2>
+      <p>建表：</p>
+      <p><code>CREATE TABLE events(ts DateTime, user_id UInt64, action String) ENGINE = MergeTree ORDER BY (ts, user_id);</code></p>
+      <p>查询：</p>
+      <p><code>SELECT action, count() FROM events WHERE ts &gt; now() - INTERVAL 1 DAY GROUP BY action ORDER BY count() DESC;</code></p>
+    </div>
+  </div>
+</body>
+</html>
