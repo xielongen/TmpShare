@@ -2,11 +2,11 @@ from pathlib import Path
 
 from flask import Flask, redirect, url_for
 
-from tmpshare.config import Settings, load_settings
-from tmpshare.repository import FileRepository
-from tmpshare.routes import bp as main_bp
-from tmpshare.routes import start_cleanup_worker
-from tmpshare.service import FileService
+from .config import Settings, load_settings
+from .repository import FileRepository
+from .routes import bp as main_bp
+from .routes import start_cleanup_worker
+from .service import FileService
 
 
 def _read_home_page(settings: Settings) -> str:

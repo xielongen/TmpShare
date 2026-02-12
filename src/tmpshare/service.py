@@ -3,8 +3,8 @@ import time
 from pathlib import Path
 from typing import BinaryIO
 
-from tmpshare.config import Settings
-from tmpshare.repository import FileRecord, FileRepository
+from .config import Settings
+from .repository import FileRecord, FileRepository
 
 
 class FileService:

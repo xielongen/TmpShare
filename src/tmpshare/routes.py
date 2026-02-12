@@ -13,7 +13,7 @@ from flask import (
     url_for,
 )
 
-from tmpshare.service import FileService
+from .service import FileService
 
 bp = Blueprint("main", __name__)
 
