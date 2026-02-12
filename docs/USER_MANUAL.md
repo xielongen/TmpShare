@@ -16,6 +16,28 @@ TmpShare 是一个临时文件分享服务，特点如下：
 - 上传接口：`POST /api/upload`
 - 下载接口：`GET /d/<token>`
 
+## 2.1 部署与启动
+
+在项目目录执行：
+
+```bash
+bash deploy/deploy.sh
+```
+
+服务会以 `secure-drop` 系统用户运行，并通过 `systemd` 托管。
+
+可选配置文件：
+
+```bash
+/etc/default/secure-drop
+```
+
+常用变量：
+
+- `TMPSHARE_EXPIRE_SECONDS`：首次下载后过期秒数
+- `TMPSHARE_CLEANUP_INTERVAL_SECONDS`：后台清理周期
+- `TMPSHARE_MAX_CONTENT_LENGTH`：上传大小上限（字节）
+
 ## 3. 上传文件
 
 ### 3.1 使用 curl 上传

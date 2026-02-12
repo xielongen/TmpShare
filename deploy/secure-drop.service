@@ -5,11 +5,15 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/secure-drop
+EnvironmentFile=-/etc/default/secure-drop
 ExecStart=/opt/secure-drop/.venv/bin/gunicorn --workers 2 --bind 0.0.0.0:8080 app:app
 Restart=always
 RestartSec=3
-User=root
-Group=root
+User=secure-drop
+Group=secure-drop
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
 
 [Install]
 WantedBy=multi-user.target
