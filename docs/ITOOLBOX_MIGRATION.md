@@ -5,8 +5,8 @@ repository was a single-purpose Krypton prototype despite its generic name.
 
 ## Kept in TmpShare
 
-- The `krypton <file>` command-line workflow, now provided by the same Python package as
-  both `tmpshare` and the compatibility alias `krypton`.
+- The one-argument file-upload command-line workflow, now provided by the same Python
+  package as both `tmpshare` and the easier-to-remember alias `ishare`.
 - Streaming uploads in 1 MiB chunks instead of reading the whole file into memory.
 - An optional bearer token for upload authorization. Tokens come only from environment
   or command-line configuration; there is no built-in credential.
@@ -25,5 +25,19 @@ repository was a single-purpose Krypton prototype despite its generic name.
   transport, but neither project encrypts file contents end-to-end.
 - Generated JavaScript, dependency directories, and local credential files.
 
-The old `KRYPTON_URL` and `KRYPTON_KEY` environment names remain accepted by the CLI only
-as a transition aid. New setups should use `TMPSHARE_URL` and `TMPSHARE_UPLOAD_TOKEN`.
+Configuration now consistently uses `TMPSHARE_URL` and `TMPSHARE_UPLOAD_TOKEN`; the old
+Krypton command and environment-variable names were removed to avoid retaining a second
+product vocabulary.
+
+## Retirement status
+
+The consolidation was completed on 2026-07-29:
+
+- GitHub repository `transcendentaloop/itoolbox` was archived after its committed SHA was
+  verified against the remote. Its history remains available for recovery.
+- Cloudflare Worker `krypton-transfer-node` was deleted. Analytics showed only its three
+  deployment-time calls and three maintenance probes over the preceding 27 days, with no
+  user traffic.
+- Its dedicated `METADATA` and `DATA` KV namespaces were confirmed empty and deleted.
+- The old global npm link was replaced with this package's `tmpshare` and `ishare`
+  commands.

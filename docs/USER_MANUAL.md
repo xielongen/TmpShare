@@ -66,7 +66,7 @@ export TMPSHARE_UPLOAD_TOKEN='<服务器配置的令牌>' # 未启用鉴权时�
 tmpshare ./example.txt
 ```
 
-从旧 `itoolbox` 迁移时，可以继续使用同功能别名 `krypton ./example.txt`。新命令不包含默认公网服务器地址或内置密码。
+日常也可以使用更易记的短命令 `ishare ./example.txt`。新命令不包含默认公网服务器地址或内置密码。
 
 成功后会返回 JSON，例如：
 

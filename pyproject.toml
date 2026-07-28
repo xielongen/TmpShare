@@ -15,7 +15,7 @@ dependencies = [
 
 [project.scripts]
 tmpshare = "tmpshare.cli:main"
-krypton = "tmpshare.cli:main"
+ishare = "tmpshare.cli:main"
 
 [project.optional-dependencies]
 dev = [

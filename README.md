@@ -6,7 +6,7 @@
 
 - `POST /api/upload` 上传文件
 - `GET /d/<token>` 下载文件
-- `tmpshare <file>` 上传命令；兼容旧命令名 `krypton <file>`
+- `tmpshare <file>` 上传命令；提供更易记的短命令 `ishare <file>`
 - 下载返回随机文件名
 - 未下载文件默认 5 分钟失效；首次下载后默认保留 60 秒供重试
 - 可选 Bearer 上传令牌，源码中不包含默认密码
@@ -38,7 +38,7 @@ python app.py
 TMPSHARE_URL=http://127.0.0.1:8080 tmpshare ./example.txt
 ```
 
-也可以用 `pipx install --editable .` 安装 `tmpshare` 与旧名称兼容命令 `krypton`。
+也可以用 `pipx install --editable .` 安装 `tmpshare` 与短命令 `ishare`。
 
 ## 服务器部署
 

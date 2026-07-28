@@ -78,18 +78,18 @@ def upload_file(
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="tmpshare",
+        prog=Path(sys.argv[0]).name,
         description="Upload a file to a TmpShare server and print its temporary download link.",
     )
     parser.add_argument("file", type=Path, help="file to upload")
     parser.add_argument(
         "--url",
-        default=os.getenv("TMPSHARE_URL") or os.getenv("KRYPTON_URL") or "http://127.0.0.1:8080",
+        default=os.getenv("TMPSHARE_URL") or "http://127.0.0.1:8080",
         help="TmpShare base URL (env: TMPSHARE_URL)",
     )
     parser.add_argument(
         "--token",
-        default=os.getenv("TMPSHARE_UPLOAD_TOKEN") or os.getenv("KRYPTON_KEY"),
+        default=os.getenv("TMPSHARE_UPLOAD_TOKEN"),
         help="optional upload token (env: TMPSHARE_UPLOAD_TOKEN)",
     )
     parser.add_argument("--timeout", type=int, default=120, help="request timeout in seconds")
