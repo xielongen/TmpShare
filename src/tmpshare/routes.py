@@ -1,3 +1,4 @@
+import hmac
 import threading
 import time
 from datetime import datetime, timezone
@@ -36,6 +37,12 @@ def upload() -> Response:
     svc = _service()
     svc.cleanup_expired()
 
+    expected_token = svc.settings.upload_token
+    if expected_token:
+        supplied_token = request.headers.get("Authorization", "").removeprefix("Bearer ")
+        if not hmac.compare_digest(supplied_token, expected_token):
+            return jsonify({"error": "unauthorized"}), 401
+
     if "file" not in request.files:
         return jsonify({"error": "missing file field, use multipart key 'file'"}), 400
 
@@ -51,7 +58,8 @@ def upload() -> Response:
     base = request.host_url.rstrip("/")
     download_url = f"{base}/d/{file_id}"
     expires_rule = (
-        "First successful download starts a " f"{svc.settings.expire_seconds}-second expiry timer."
+        f"The link expires after {svc.settings.unclaimed_expire_seconds} seconds if unused; "
+        f"the first successful download starts a {svc.settings.expire_seconds}-second grace period."
     )
     return jsonify(
         {

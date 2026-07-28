@@ -82,11 +82,15 @@ class FileRepository:
             conn.execute("DELETE FROM files WHERE id = ?", (file_id,))
             conn.commit()
 
-    def list_expired(self, now_ts: int) -> list[FileRecord]:
+    def list_expired(self, now_ts: int, unclaimed_before: int) -> list[FileRecord]:
         with self._conn() as conn:
             rows = conn.execute(
-                "SELECT * FROM files WHERE expire_at IS NOT NULL AND expire_at <= ?",
-                (now_ts,),
+                """
+                SELECT * FROM files
+                WHERE (expire_at IS NOT NULL AND expire_at <= ?)
+                   OR (expire_at IS NULL AND created_at <= ?)
+                """,
+                (now_ts, unclaimed_before),
             ).fetchall()
         return [self._from_row(row) for row in rows]
 

@@ -7,7 +7,8 @@ TmpShare 是一个临时文件分享服务，特点如下：
 - 支持浏览器与 `curl` 上传下载。
 - 上传后返回随机下载链接，其他人难以猜测。
 - 下载文件名为随机名，不暴露原始文件名。
-- 首次成功下载后，文件在 60 秒后自动过期并删除。
+- 未下载文件默认在上传 5 分钟后自动过期并删除。
+- 首次成功下载后，文件默认在 60 秒后自动过期并删除。
 - 访问无效路径或过期链接，自动跳转到主页（ClickHouse 介绍页）。
 
 ## 2. 访问入口
@@ -35,8 +36,10 @@ bash deploy/deploy.sh
 常用变量：
 
 - `TMPSHARE_EXPIRE_SECONDS`：首次下载后过期秒数
+- `TMPSHARE_UNCLAIMED_EXPIRE_SECONDS`：未发生下载时的最长保留秒数
 - `TMPSHARE_CLEANUP_INTERVAL_SECONDS`：后台清理周期
 - `TMPSHARE_MAX_CONTENT_LENGTH`：上传大小上限（字节）
+- `TMPSHARE_UPLOAD_TOKEN`：可选上传令牌；公网部署建议设置
 
 ## 3. 上传文件
 
@@ -45,6 +48,25 @@ bash deploy/deploy.sh
 ```bash
 curl -F "file=@./example.txt" http://<服务器IP>:8080/api/upload
 ```
+
+如果服务器启用了上传令牌：
+
+```bash
+curl -H "Authorization: Bearer ${TMPSHARE_UPLOAD_TOKEN}" \
+  -F "file=@./example.txt" http://<服务器IP>:8080/api/upload
+```
+
+### 3.2 使用 TmpShare 命令上传
+
+在项目根目录运行 `pipx install --editable .` 后：
+
+```bash
+export TMPSHARE_URL=http://<服务器IP>:8080
+export TMPSHARE_UPLOAD_TOKEN='<服务器配置的令牌>' # 未启用鉴权时省略
+tmpshare ./example.txt
+```
+
+从旧 `itoolbox` 迁移时，可以继续使用同功能别名 `krypton ./example.txt`。新命令不包含默认公网服务器地址或内置密码。
 
 成功后会返回 JSON，例如：
 
@@ -71,7 +93,7 @@ curl -L "http://<服务器IP>:8080/d/<token>" -o "downloaded.file"
 
 ## 5. 过期与失效规则
 
-- 文件上传后，如果没人下载，会一直保留。
+- 文件上传后，如果没人下载，默认 5 分钟后清理。
 - 第一次成功下载后，开始计时 60 秒。
 - 60 秒后文件与元数据自动清理。
 - 过期链接再次访问会重定向到主页。
@@ -107,4 +129,5 @@ sudo systemctl restart secure-drop
 
 - 建议通过 HTTPS（Nginx + TLS）对外提供服务。
 - 建议在公网入口增加限流、防刷和访问日志审计。
-- 若用于高敏感数据，建议增加上传鉴权与一次性下载策略。
+- 公网入口应配置 `TMPSHARE_UPLOAD_TOKEN`；不要把令牌写入仓库。
+- 若用于高敏感数据，应在客户端先加密；TmpShare 本身不提供端到端加密。

@@ -1,4 +1,5 @@
 import secrets
+import shutil
 import time
 from pathlib import Path
 from typing import BinaryIO
@@ -22,7 +23,11 @@ class FileService:
 
     def cleanup_expired(self) -> int:
         removed = 0
-        expired = self.repo.list_expired(self.now_ts())
+        now_value = self.now_ts()
+        expired = self.repo.list_expired(
+            now_value,
+            now_value - self.settings.unclaimed_expire_seconds,
+        )
         for item in expired:
             file_path = self.settings.files_dir / item.stored_name
             if file_path.exists():
@@ -38,21 +43,27 @@ class FileService:
         file_stream: BinaryIO,
     ) -> tuple[str, str]:
         ext = Path(original_name).suffix
+        if len(ext) > 16 or not ext.removeprefix(".").isalnum():
+            ext = ""
         file_id = secrets.token_urlsafe(24)
         download_name = f"{secrets.token_hex(8)}{ext}" if ext else secrets.token_hex(8)
         stored_name = f"{file_id}.bin"
         save_path = self.settings.files_dir / stored_name
 
-        with save_path.open("wb") as f:
-            f.write(file_stream.read())
+        try:
+            with save_path.open("wb") as destination:
+                shutil.copyfileobj(file_stream, destination, length=1024 * 1024)
 
-        self.repo.insert_file(
-            file_id=file_id,
-            stored_name=stored_name,
-            original_name=original_name,
-            download_name=download_name,
-            created_at=self.now_ts(),
-        )
+            self.repo.insert_file(
+                file_id=file_id,
+                stored_name=stored_name,
+                original_name=original_name,
+                download_name=download_name,
+                created_at=self.now_ts(),
+            )
+        except Exception:
+            save_path.unlink(missing_ok=True)
+            raise
         return file_id, download_name
 
     def resolve_download(self, file_id: str) -> tuple[str, FileRecord | None]:

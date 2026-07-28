@@ -11,9 +11,11 @@ class Settings:
     db_path: Path
     home_page_path: Path
     expire_seconds: int
+    unclaimed_expire_seconds: int
     cleanup_interval_seconds: int
     max_content_length: int
     enable_background_cleanup: bool
+    upload_token: str | None
 
 
 def _int_env(name: str, default: int) -> int:
@@ -42,8 +44,10 @@ def load_settings(app_dir: Path | None = None) -> Settings:
         db_path=db_path,
         home_page_path=home_page_path,
         expire_seconds=max(_int_env("TMPSHARE_EXPIRE_SECONDS", 60), 1),
+        unclaimed_expire_seconds=max(_int_env("TMPSHARE_UNCLAIMED_EXPIRE_SECONDS", 5 * 60), 1),
         cleanup_interval_seconds=max(_int_env("TMPSHARE_CLEANUP_INTERVAL_SECONDS", 15), 1),
         max_content_length=max(_int_env("TMPSHARE_MAX_CONTENT_LENGTH", 100 * 1024 * 1024), 1),
         enable_background_cleanup=os.getenv("TMPSHARE_ENABLE_BG_CLEANUP", "true").lower()
         in {"1", "true", "yes", "on"},
+        upload_token=os.getenv("TMPSHARE_UPLOAD_TOKEN", "").strip() or None,
     )

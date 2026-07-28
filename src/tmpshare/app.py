@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from flask import Flask, redirect, url_for
+from flask import Flask, jsonify, redirect, url_for
 
 from .config import Settings, load_settings
 from .repository import FileRepository
@@ -32,6 +32,10 @@ def create_app(settings: Settings | None = None, app_dir: Path | None = None) ->
     @app.errorhandler(404)
     def not_found(_: Exception):
         return redirect(url_for("main.index"), code=302)
+
+    @app.errorhandler(413)
+    def too_large(_: Exception):
+        return jsonify({"error": "upload exceeds configured size limit"}), 413
 
     if cfg.enable_background_cleanup:
         app.extensions["cleanup_thread"] = start_cleanup_worker(service)

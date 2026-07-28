@@ -1,11 +1,15 @@
 import time
 from io import BytesIO
+from threading import Thread
+
+from werkzeug.serving import make_server
 
 from tmpshare.app import create_app
+from tmpshare.cli import upload_file
 from tmpshare.config import Settings
 
 
-def _build_settings(tmp_path, expire_seconds=60):
+def _build_settings(tmp_path, expire_seconds=60, unclaimed_expire_seconds=300, upload_token=None):
     app_dir = tmp_path
     data_dir = tmp_path / "data"
     files_dir = data_dir / "files"
@@ -20,9 +24,11 @@ def _build_settings(tmp_path, expire_seconds=60):
         db_path=db_path,
         home_page_path=home_page_path,
         expire_seconds=expire_seconds,
+        unclaimed_expire_seconds=unclaimed_expire_seconds,
         cleanup_interval_seconds=1,
         max_content_length=10 * 1024 * 1024,
         enable_background_cleanup=False,
+        upload_token=upload_token,
     )
 
 
@@ -74,3 +80,65 @@ def test_download_expires_after_first_download(tmp_path):
     second = client.get(f"/d/{token}")
     assert second.status_code == 302
     assert second.headers["Location"].endswith("/")
+
+
+def test_unclaimed_upload_expires(tmp_path, monkeypatch):
+    app = create_app(settings=_build_settings(tmp_path, unclaimed_expire_seconds=10))
+    client = app.test_client()
+    service = app.extensions["file_service"]
+    monkeypatch.setattr(service, "now_ts", lambda: 100)
+
+    upload_resp = client.post(
+        "/api/upload",
+        data={"file": (BytesIO(b"unclaimed"), "unclaimed.txt")},
+        content_type="multipart/form-data",
+    )
+    token = upload_resp.get_json()["download_url"].rsplit("/", 1)[-1]
+
+    monkeypatch.setattr(service, "now_ts", lambda: 111)
+    expired = client.get(f"/d/{token}")
+    assert expired.status_code == 302
+    assert service.repo.get_file(token) is None
+
+
+def test_upload_token_is_optional_and_enforced_when_configured(tmp_path):
+    app = create_app(settings=_build_settings(tmp_path, upload_token="test-token"))
+    client = app.test_client()
+
+    denied = client.post(
+        "/api/upload",
+        data={"file": (BytesIO(b"private"), "private.txt")},
+        content_type="multipart/form-data",
+    )
+    assert denied.status_code == 401
+
+    allowed = client.post(
+        "/api/upload",
+        headers={"Authorization": "Bearer test-token"},
+        data={"file": (BytesIO(b"private"), "private.txt")},
+        content_type="multipart/form-data",
+    )
+    assert allowed.status_code == 200
+
+
+def test_cli_streaming_upload_uses_public_api(tmp_path):
+    app = create_app(settings=_build_settings(tmp_path, upload_token="cli-token"))
+    server = make_server("127.0.0.1", 0, app)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    source = tmp_path / "cli-example.txt"
+    source.write_bytes(b"uploaded through cli")
+
+    try:
+        payload = upload_file(
+            source,
+            base_url=f"http://127.0.0.1:{server.server_port}",
+            token="cli-token",
+        )
+        token = str(payload["download_url"]).rsplit("/", 1)[-1]
+        response = app.test_client().get(f"/d/{token}")
+        assert response.status_code == 200
+        assert response.data == b"uploaded through cli"
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)

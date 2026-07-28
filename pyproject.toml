@@ -4,14 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tmpshare"
-version = "0.1.0"
-description = "Temporary secure file sharing service"
+version = "0.2.0"
+description = "Temporary file sharing service with expiring random links"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "flask==3.0.3",
   "gunicorn==22.0.0",
 ]
+
+[project.scripts]
+tmpshare = "tmpshare.cli:main"
+krypton = "tmpshare.cli:main"
 
 [project.optional-dependencies]
 dev = [
