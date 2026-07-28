@@ -1,5 +1,5 @@
-from io import BytesIO
 import time
+from io import BytesIO
 
 from tmpshare.app import create_app
 from tmpshare.config import Settings

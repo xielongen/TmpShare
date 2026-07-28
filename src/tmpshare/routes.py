@@ -51,8 +51,7 @@ def upload() -> Response:
     base = request.host_url.rstrip("/")
     download_url = f"{base}/d/{file_id}"
     expires_rule = (
-        "First successful download starts a "
-        f"{svc.settings.expire_seconds}-second expiry timer."
+        "First successful download starts a " f"{svc.settings.expire_seconds}-second expiry timer."
     )
     return jsonify(
         {
