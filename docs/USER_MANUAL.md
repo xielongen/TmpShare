@@ -61,12 +61,15 @@ curl -H "Authorization: Bearer ${TMPSHARE_UPLOAD_TOKEN}" \
 在项目根目录运行 `pipx install --editable .` 后：
 
 ```bash
-export TMPSHARE_URL=http://<服务器IP>:8080
-export TMPSHARE_UPLOAD_TOKEN='<服务器配置的令牌>' # 未启用鉴权时省略
-tmpshare ./example.txt
+ishare setup http://<服务器IP>:8080
+# 根据隐藏提示输入服务器的上传口令；未启用鉴权时直接留空
+ishare ./example.txt
 ```
 
 日常也可以使用更易记的短命令 `ishare ./example.txt`。新命令不包含默认公网服务器地址或内置密码。
+
+配置会保存在 `~/.config/ishare/config.json`，权限为 `600`，以后无需记忆环境变量。
+运行 `ishare config` 可以查看当前服务器地址以及是否已配置口令，但不会显示口令本身。
 
 成功后会返回 JSON，例如：
 
@@ -90,6 +93,9 @@ curl -L "http://<服务器IP>:8080/d/<token>" -o "downloaded.file"
 ```
 
 建议直接使用上传响应中的 `curl_download` 命令，以保证文件名与服务端一致。
+
+上传口令仅用于阻止陌生人上传，不需要在下载时传入。下载链接中的随机 token
+本身就是访问凭证：任何拿到完整链接的人都能在链接有效期内下载文件。
 
 ## 5. 过期与失效规则
 

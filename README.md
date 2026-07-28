@@ -35,10 +35,14 @@ python app.py
 另开终端测试命令行上传：
 
 ```bash
-TMPSHARE_URL=http://127.0.0.1:8080 tmpshare ./example.txt
+pipx install --editable .
+ishare setup http://127.0.0.1:8080 --no-token
+ishare ./example.txt
 ```
 
-也可以用 `pipx install --editable .` 安装 `tmpshare` 与短命令 `ishare`。
+`setup` 会把服务器地址和可选上传口令保存在 `~/.config/ishare/config.json`，
+文件权限为 `600`。之后不需要记忆环境变量；`ishare config` 只显示配置状态，
+不会输出口令。环境变量仍保留给 CI 等自动化场景临时覆盖配置。
 
 ## 服务器部署
 
@@ -60,7 +64,18 @@ sudo vim /etc/default/secure-drop
 TMPSHARE_UPLOAD_TOKEN='<long-random-token>'
 ```
 
-客户端使用同名环境变量，不要把令牌写入源码或提交到 Git。
+服务器口令不要写入源码或提交到 Git。
+
+日常客户端不需要记住变量名，只需配置一次：
+
+```bash
+ishare setup https://<你的服务地址>
+# 根据隐藏提示输入与服务器相同的上传口令
+ishare ./example.txt
+```
+
+上传口令只保护 `POST /api/upload`。下载不需要额外输入口令；随机下载链接本身
+就是临时访问凭证，因此不要把链接发给无关人员。
 
 部署完成后访问：
 

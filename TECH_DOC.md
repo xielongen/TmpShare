@@ -36,13 +36,19 @@ curl -H "Authorization: Bearer ${TMPSHARE_UPLOAD_TOKEN}" \
 项目安装后也可以流式上传：
 
 ```bash
-TMPSHARE_URL=http://<host>:8080 tmpshare ./example.txt
+ishare setup http://<host>:8080
+ishare ./example.txt
 ```
+
+客户端配置保存在 `~/.config/ishare/config.json`（权限 `600`）。解析优先级为：
+当次命令参数、自动化环境变量、本机配置、内置本地地址
+`http://127.0.0.1:8080`。固定上传口令不会内置在源码中。
 
 ### 下载
 
 - `GET /d/<token>`
 - 响应头 `Content-Disposition` 使用随机文件名
+- 上传 Bearer 口令不参与下载；路径中的高熵 token 就是下载授权
 
 示例：
 

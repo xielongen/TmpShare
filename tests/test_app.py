@@ -1,3 +1,6 @@
+import json
+import stat
+import sys
 import time
 from io import BytesIO
 from threading import Thread
@@ -5,7 +8,7 @@ from threading import Thread
 from werkzeug.serving import make_server
 
 from tmpshare.app import create_app
-from tmpshare.cli import upload_file
+from tmpshare.cli import ClientConfig, load_client_config, main, save_client_config, upload_file
 from tmpshare.config import Settings
 
 
@@ -142,3 +145,77 @@ def test_cli_streaming_upload_uses_public_api(tmp_path):
     finally:
         server.shutdown()
         thread.join(timeout=2)
+
+
+def test_client_config_is_private_and_round_trips(tmp_path):
+    config_path = tmp_path / "ishare" / "config.json"
+    saved_path = save_client_config(
+        ClientConfig(url="https://share.example.test/", upload_token="local-secret"),
+        path=config_path,
+    )
+
+    assert saved_path == config_path
+    assert stat.S_IMODE(config_path.stat().st_mode) == 0o600
+    assert stat.S_IMODE(config_path.parent.stat().st_mode) == 0o700
+    assert load_client_config(config_path) == ClientConfig(
+        url="https://share.example.test",
+        upload_token="local-secret",
+    )
+    assert json.loads(config_path.read_text(encoding="utf-8"))["upload_token"] == "local-secret"
+
+
+def test_ishare_uses_saved_config_without_environment_variables(tmp_path, monkeypatch, capsys):
+    app = create_app(settings=_build_settings(tmp_path, upload_token="saved-token"))
+    server = make_server("127.0.0.1", 0, app)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    source = tmp_path / "saved-config.txt"
+    source.write_bytes(b"saved configuration")
+    config_home = tmp_path / "client-config"
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(config_home))
+    monkeypatch.delenv("TMPSHARE_URL", raising=False)
+    monkeypatch.delenv("TMPSHARE_UPLOAD_TOKEN", raising=False)
+    save_client_config(
+        ClientConfig(
+            url=f"http://127.0.0.1:{server.server_port}",
+            upload_token="saved-token",
+        )
+    )
+    monkeypatch.setattr(sys, "argv", ["ishare", str(source)])
+
+    try:
+        assert main() == 0
+        output = capsys.readouterr().out
+        assert "http://127.0.0.1:" in output
+        assert "saved-token" not in output
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+
+
+def test_config_command_never_prints_token(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    save_client_config(ClientConfig(url="https://share.example.test", upload_token="hidden"))
+    monkeypatch.setattr(sys, "argv", ["ishare", "config"])
+
+    assert main() == 0
+    output = capsys.readouterr().out
+    assert "Upload token: configured" in output
+    assert "hidden" not in output
+
+
+def test_setup_prompts_for_token_and_saves_it(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr("tmpshare.cli.getpass.getpass", lambda _: "prompt-token")
+    monkeypatch.setattr(sys, "argv", ["ishare", "setup", "https://share.example.test/"])
+
+    assert main() == 0
+    config = load_client_config()
+    assert config == ClientConfig(
+        url="https://share.example.test",
+        upload_token="prompt-token",
+    )
+    output = capsys.readouterr().out
+    assert "Upload token: configured" in output
+    assert "prompt-token" not in output
