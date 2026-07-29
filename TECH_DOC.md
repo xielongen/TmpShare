@@ -1,70 +1,88 @@
-# Secure Drop 技术说明
+# TmpShare / ishare 技术说明
 
-这是一个临时私密文件传输服务，支持浏览器与 `curl`。
+TmpShare 是短生命周期文件传输服务，当前同时保留 Cloudflare 生产实现和 Flask/VPS 实现，共用同一套 `ishare` 客户端协议。
 
-## 设计目标
+## 目标与边界
 
-- 上传后仅上传者当次响应可见下载链接与命令。
-- 下载链接为高熵随机令牌，难以猜测。
-- 未下载文件默认在上传 5 分钟后自动失效并删除。
-- 首次成功下载后开始计时，默认 60 秒后文件自动失效并删除。
-- 上传鉴权可通过环境变量启用，服务端代码不保存共享密码。
-- 对未命中路由或过期链接，返回本技术文档（Markdown）。
+- 上传后只在当次响应中返回高熵下载链接。
+- 原始文件名不进入下载响应；服务端生成随机下载名并保留安全扩展名。
+- 未下载文件默认 300 秒失效；首次成功下载后进入 60 秒重试窗口。
+- 上传必须通过 Bearer 密钥，下载链接中的 192 位随机 token 即下载授权。
+- 传输使用 HTTPS，但内容没有端到端加密；敏感文件应在客户端先加密。
 
-## API
+## 公网 Cloudflare 架构
 
-### 上传
+`ishare.xie-longen.workers.dev` 使用以下资源：
 
-- `POST /api/upload`
-- `multipart/form-data`，字段名：`file`
-- 成功返回 JSON（包含 `download_url` 与 `curl_download`）
-- 设置 `TMPSHARE_UPLOAD_TOKEN` 后，请求必须携带 `Authorization: Bearer <token>`
+- Worker `ishare`：鉴权、流式上传、下载和主页。
+- KV `ishare-files`：短期文件内容，写入时设置 300 秒 TTL。
+- D1 `ishare-metadata`：token、随机下载名、大小、首次下载和过期时间。
+- Cron Trigger：每分钟最多清理 100 个到期记录和文件。
+- Worker Secret `UPLOAD_TOKEN`：上传鉴权，不在配置或 Git 中出现。
 
-示例：
+R2 是大文件的优选方案，但账户当前未启用 R2，因此生产实例采用 KV。由 KV 平台硬限制决定，单文件上限固定为 25 MiB。KV 跨区域传播可能短暂延迟；文件暂不可见时服务返回 `503` 和 `Retry-After: 5`，不会误删 D1 元数据。
 
-```bash
-curl -F "file=@./example.txt" http://<host>:8080/api/upload
+## Flask / VPS 架构
+
+Flask 实现将文件写入 `data/files/`，SQLite 保存元数据，后台线程和请求入口都会清理到期文件。systemd 服务名为 `secure-drop`。该实现默认上限 100 MiB，可由 `TMPSHARE_MAX_CONTENT_LENGTH` 调整。
+
+`http://127.0.0.1:8080` 仅用于本机开发：`127.0.0.1` 指当前电脑自身，外部设备无法通过它访问。目前 `ishare` 的代码默认值和本机配置都指向 Cloudflare 公网实例。
+
+## 上传协议
+
+### 流式协议（客户端和 Cloudflare）
+
+```http
+POST /api/upload
+Authorization: Bearer <upload-token>
+Content-Type: application/octet-stream
+Content-Length: <bytes>
+X-File-Name: <URL-encoded-name>
 ```
 
-启用上传令牌后：
+`ishare` 每次读取 1 MiB 并发送，不把整个文件载入客户端内存。Flask 实现也接受该协议。
+
+### Flask 兼容协议
+
+Flask 另外兼容 `multipart/form-data`，字段名为 `file`：
 
 ```bash
 curl -H "Authorization: Bearer ${TMPSHARE_UPLOAD_TOKEN}" \
-  -F "file=@./example.txt" http://<host>:8080/api/upload
+  -F "file=@./example.txt" http://127.0.0.1:8080/api/upload
 ```
 
-项目安装后也可以流式上传：
+上传成功返回 `download_url`、随机 `download_filename`、过期说明和 `curl_download`。
+
+## 下载和过期状态
+
+```text
+upload
+  -> 300 秒内无人领取：失效并清理
+  -> 首次成功下载：写入 first_download_at 和 expire_at = now + 60
+  -> 60 秒重试窗口结束：链接失效并清理
+```
+
+`GET /d/<token>` 无需上传密钥。无效、缺失或过期 token 返回 `302 Location: /`。Cloudflare 下载禁用缓存，并设置 `nosniff` 和 `no-referrer`。
+
+## 密钥与客户端配置
+
+配置优先级为：本次命令参数、自动化环境变量、本机配置、内置公网地址。上传密钥没有源码默认值，也不会出现在 `ishare config` 输出中。
+
+- 本机：`~/.config/ishare/config.json`，目录 `700`、文件 `600`。
+- Cloudflare：加密的 Worker Secret `UPLOAD_TOKEN`。
+- Flask/VPS：`/etc/default/secure-drop` 的 `TMPSHARE_UPLOAD_TOKEN`。
+
+下载方不传 Bearer 密钥；任何拿到完整下载 URL 的人都能在有效期内下载。
+
+## 验证
 
 ```bash
-ishare setup http://<host>:8080
-ishare ./example.txt
+pytest -q
+ruff check .
+black --check .
+cd cloudflare
+npm run check
+npm run deploy:dry
 ```
 
-客户端配置保存在 `~/.config/ishare/config.json`（权限 `600`）。解析优先级为：
-当次命令参数、自动化环境变量、本机配置、内置本地地址
-`http://127.0.0.1:8080`。固定上传口令不会内置在源码中。
-
-### 下载
-
-- `GET /d/<token>`
-- 响应头 `Content-Disposition` 使用随机文件名
-- 上传 Bearer 口令不参与下载；路径中的高熵 token 就是下载授权
-
-示例：
-
-```bash
-curl -L "http://<host>:8080/d/<token>" -o "<random_name>"
-```
-
-## 过期规则
-
-- 上传后尚未下载：默认 300 秒后过期，由 `TMPSHARE_UNCLAIMED_EXPIRE_SECONDS` 控制。
-- 首次成功下载时：设置 `expire_at = now + 60s`。
-- 超时后：数据文件与元数据都会被清理。
-
-## 安全建议
-
-- 生产环境建议放在 HTTPS 反向代理后（如 Nginx + TLS）。
-- 建议在公网入口增加速率限制与审计日志。
-- 公网部署应设置 `TMPSHARE_UPLOAD_TOKEN`，并使用独立的高熵随机值。
-- 本服务没有端到端内容加密；高敏感文件应在上传前由客户端自行加密。
+Cloudflare 测试在 `workerd` 中使用隔离的本地 KV/D1，覆盖鉴权、上传/下载、首次下载计时、过期删除、定时清理和隐藏调试入口。

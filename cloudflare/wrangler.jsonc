@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ishare",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-29",
+  "compatibility_flags": ["nodejs_compat"],
+  "secrets": {
+    "required": ["UPLOAD_TOKEN"]
+  },
+  "vars": {
+    "UNCLAIMED_EXPIRE_SECONDS": "300",
+    "DOWNLOAD_GRACE_SECONDS": "60",
+    "MAX_UPLOAD_BYTES": "26214400"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "FILES",
+      "id": "22af7a6be3bb436cbe620b29ae1c0e31"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ishare-metadata",
+      "database_id": "cc20fb2c-d0da-4594-ba1a-ddbb3b0cfc1d",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  }
+}

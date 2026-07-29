@@ -7,3 +7,10 @@ dist/
 data/
 .pytest_cache/
 .ruff_cache/
+.wrangler/
+cloudflare/node_modules/
+cloudflare/.wrangler/
+cloudflare/.dev.vars*
+cloudflare/.env*
+cloudflare/coverage/
+cloudflare/worker-configuration.d.ts

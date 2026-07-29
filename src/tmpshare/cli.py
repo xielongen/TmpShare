@@ -3,14 +3,13 @@ import getpass
 import http.client
 import json
 import os
-import secrets
 import stat
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote, urlsplit
 
-DEFAULT_URL = "http://127.0.0.1:8080"
+DEFAULT_URL = "https://ishare.xie-longen.workers.dev"
 
 
 @dataclass(frozen=True)
@@ -50,7 +49,7 @@ def save_client_config(config: ClientConfig, path: Path | None = None) -> Path:
     config_path = path or client_config_path()
     config_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     config_path.parent.chmod(0o700)
-    temporary_path = config_path.with_name(f".{config_path.name}.{secrets.token_hex(4)}.tmp")
+    temporary_path = config_path.with_name(f".{config_path.name}.{os.urandom(4).hex()}.tmp")
     payload = {"url": config.url.rstrip("/"), "upload_token": config.upload_token or None}
 
     try:
@@ -98,31 +97,20 @@ def upload_file(
         raise ValueError(f"file does not exist: {file_path}")
 
     connection_type, host, endpoint = _upload_target(base_url)
-    boundary = f"----tmpshare-{secrets.token_hex(16)}"
-    safe_name = file_path.name.replace('"', "_").replace("\r", "_").replace("\n", "_")
     encoded_name = quote(file_path.name, safe="")
-    prefix = (
-        f"--{boundary}\r\n"
-        'Content-Disposition: form-data; name="file"; '
-        f"filename=\"{safe_name}\"; filename*=UTF-8''{encoded_name}\r\n"
-        "Content-Type: application/octet-stream\r\n\r\n"
-    ).encode()
-    suffix = f"\r\n--{boundary}--\r\n".encode()
 
     connection = connection_type(host, timeout=timeout)
     try:
         connection.putrequest("POST", endpoint)
-        connection.putheader("Content-Type", f"multipart/form-data; boundary={boundary}")
-        content_length = len(prefix) + file_path.stat().st_size + len(suffix)
-        connection.putheader("Content-Length", str(content_length))
+        connection.putheader("Content-Type", "application/octet-stream")
+        connection.putheader("Content-Length", str(file_path.stat().st_size))
+        connection.putheader("X-File-Name", encoded_name)
         if token:
             connection.putheader("Authorization", f"Bearer {token}")
         connection.endheaders()
-        connection.send(prefix)
         with file_path.open("rb") as source:
             while chunk := source.read(1024 * 1024):
                 connection.send(chunk)
-        connection.send(suffix)
 
         response = connection.getresponse()
         body = response.read()
@@ -167,6 +155,11 @@ def _setup(argv: list[str]) -> int:
     token_group = parser.add_mutually_exclusive_group()
     token_group.add_argument("--token", help="upload token (prefer the hidden prompt)")
     token_group.add_argument(
+        "--token-file",
+        type=Path,
+        help="read the upload token from a file instead of exposing it on the command line",
+    )
+    token_group.add_argument(
         "--no-token",
         action="store_true",
         help="save a configuration for a server without upload authentication",
@@ -175,6 +168,12 @@ def _setup(argv: list[str]) -> int:
 
     if args.no_token:
         token = None
+    elif args.token_file is not None:
+        try:
+            token = args.token_file.read_text(encoding="utf-8").strip() or None
+        except OSError as exc:
+            print(f"{Path(sys.argv[0]).name}: cannot read token file: {exc}", file=sys.stderr)
+            return 1
     elif args.token is not None:
         token = args.token.strip() or None
     elif sys.stdin.isatty():

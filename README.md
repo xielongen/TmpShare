@@ -1,108 +1,102 @@
-# TmpShare
+# TmpShare / ishare
 
-临时文件分享服务，支持命令行/`curl` 上传下载、随机不可猜下载链接、未领取超时清理，以及首次下载后的短暂重试窗口。
+临时文件分享服务。当前公网实例已经部署到 Cloudflare：
 
-## 核心能力
+```text
+https://ishare.xie-longen.workers.dev
+```
 
-- `POST /api/upload` 上传文件
-- `GET /d/<token>` 下载文件
-- `tmpshare <file>` 上传命令；提供更易记的短命令 `ishare <file>`
-- 下载返回随机文件名
-- 未下载文件默认 5 分钟失效；首次下载后默认保留 60 秒供重试
-- 可选 Bearer 上传令牌，源码中不包含默认密码
-- 无效路径和过期链接自动跳转到主页（ClickHouse 介绍页）
-- 配置可通过环境变量控制（过期时间、清理周期、上传大小）
+日常只需执行：
 
-## 工程规范
+```bash
+ishare ./example.txt
+```
 
-- `src` 包结构（应用工厂、配置、仓储、服务、路由分层）
-- `pytest` 自动化测试
-- `ruff` + `black` 代码规范
-- GitHub Actions CI（lint + format-check + tests）
+上传成功后会输出临时下载链接和对应的 `curl` 下载命令。下载不需要额外密码；完整下载链接本身就是短期访问凭证。
 
-## 本地开发
+## 当前公网行为
+
+- 上传需要高熵 Bearer 密钥；密钥只存在于 Cloudflare Secret 和本机 `~/.config/ishare/config.json`。
+- 本机配置文件权限为 `600`，`ishare config` 只显示是否已配置密钥，不会打印密钥。
+- 未领取文件 5 分钟失效；首次成功下载后保留 60 秒供重试。
+- 下载文件使用随机文件名，不公开原始文件名。
+- Cloudflare 版本单文件上限为 25 MiB。
+- 主页伪装为 ClickHouse 介绍页；无效或过期下载链接返回主页。
+
+公网实例使用 Workers + KV（临时文件）+ D1（过期元数据），每分钟执行一次清理。原计划使用 R2，但当前 Cloudflare 账户尚未启用 R2；因此先采用可立即部署的 KV 方案。KV 的 25 MiB 限制和跨区域短暂传播延迟均已在客户端/服务端显式处理，启用 R2 后可再升级大文件能力。
+
+## 客户端安装和配置
+
+```bash
+pipx install --editable .
+ishare config
+ishare ./example.txt
+```
+
+源码中的默认服务地址已经是上面的公网实例，因此无需记忆 `TMPSHARE_URL`。上传密钥不会硬编码进公开仓库；新电脑首次使用时执行一次：
+
+```bash
+ishare setup https://ishare.xie-longen.workers.dev
+# 根据隐藏提示输入上传密钥
+```
+
+自动化环境仍可用 `--url`、`--token`、`TMPSHARE_URL` 和 `TMPSHARE_UPLOAD_TOKEN` 临时覆盖本机配置。安全脚本可通过 `ishare setup <url> --token-file <path>` 避免把密钥放进进程参数。
+
+## 两种服务端实现
+
+### Cloudflare（当前生产环境）
+
+```bash
+cd cloudflare
+npm ci
+npm run check
+npm run deploy:dry
+```
+
+资源、迁移、密钥部署和回滚说明见 [`cloudflare/README.md`](cloudflare/README.md)。
+
+### VPS / 本地 Flask
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
 pytest -q
-ruff check .
-black --check .
 python app.py
 ```
 
-另开终端测试命令行上传：
+本地测试时另开终端：
 
 ```bash
-pipx install --editable .
 ishare setup http://127.0.0.1:8080 --no-token
 ishare ./example.txt
 ```
 
-`setup` 会把服务器地址和可选上传口令保存在 `~/.config/ishare/config.json`，
-文件权限为 `600`。之后不需要记忆环境变量；`ishare config` 只显示配置状态，
-不会输出口令。环境变量仍保留给 CI 等自动化场景临时覆盖配置。
+这里的 `127.0.0.1:8080` 只表示当前电脑上的 Flask 开发服务，不是公网地址。VPS 可执行 `bash deploy/deploy.sh` 安装为 `secure-drop` systemd 服务；生产口令放在 `/etc/default/secure-drop`，不要写入 Git。
 
-## 服务器部署
+## API
 
-在项目根目录执行：
+- `POST /api/upload`：上传文件。
+- `GET /d/<token>`：下载文件。
+- Flask 实现兼容 `multipart/form-data` 和流式 `application/octet-stream`。
+- Cloudflare 实现使用 `application/octet-stream`、`Content-Length` 和 URL 编码的 `X-File-Name`。
 
-```bash
-bash deploy/deploy.sh
-```
-
-环境变量默认文件（可选）：
+## 工程检查
 
 ```bash
-sudo vim /etc/default/secure-drop
+pytest -q
+ruff check .
+black --check .
+cd cloudflare && npm run check && npm run deploy:dry
 ```
 
-公网部署时建议设置独立的上传令牌：
-
-```bash
-TMPSHARE_UPLOAD_TOKEN='<long-random-token>'
-```
-
-服务器口令不要写入源码或提交到 Git。
-
-日常客户端不需要记住变量名，只需配置一次：
-
-```bash
-ishare setup https://<你的服务地址>
-# 根据隐藏提示输入与服务器相同的上传口令
-ishare ./example.txt
-```
-
-上传口令只保护 `POST /api/upload`。下载不需要额外输入口令；随机下载链接本身
-就是临时访问凭证，因此不要把链接发给无关人员。
-
-部署完成后访问：
-
-```text
-http://<server-ip>:8080/
-```
+GitHub Actions 同时检查 Python/Flask 和 Cloudflare Worker。
 
 ## 项目结构
 
-- `app.py`：主服务代码（Flask）
-- `src/tmpshare/`：主应用包
-- `tests/`：测试
-- `pyproject.toml`：项目配置与工具配置
-- `requirements.txt`：运行依赖
-- `requirements-dev.txt`：开发依赖
-- `CLICKHOUSE_HOME.html`：主页内容
-- `TECH_DOC.md`：技术文档
-- `deploy/deploy.sh`：一键部署脚本
-- `deploy/secure-drop.service`：systemd 服务文件
-- `deploy/secure-drop.env.example`：环境变量示例
-- `docs/USER_MANUAL.md`：用户手册
-- `docs/ITOOLBOX_MIGRATION.md`：itoolbox 功能取舍与迁移记录
-
-## 运维命令
-
-```bash
-sudo systemctl status secure-drop
-sudo systemctl restart secure-drop
-sudo journalctl -u secure-drop -n 100 --no-pager
-```
+- `src/tmpshare/`：Flask 服务和 `ishare` 客户端。
+- `cloudflare/`：当前公网 Worker、KV/D1 配置、迁移和运行时测试。
+- `deploy/`：VPS systemd 部署。
+- `tests/`、`cloudflare/test/`：两套实现的自动化测试。
+- `TECH_DOC.md`：协议、过期与安全设计。
+- `docs/ITOOLBOX_MIGRATION.md`：旧 itoolbox 的迁移、删除与保留理由。

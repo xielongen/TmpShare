@@ -2,6 +2,7 @@ import hmac
 import threading
 import time
 from datetime import datetime, timezone
+from urllib.parse import unquote
 
 from flask import (
     Blueprint,
@@ -43,16 +44,32 @@ def upload() -> Response:
         if not hmac.compare_digest(supplied_token, expected_token):
             return jsonify({"error": "unauthorized"}), 401
 
-    if "file" not in request.files:
-        return jsonify({"error": "missing file field, use multipart key 'file'"}), 400
-
-    upload_file = request.files["file"]
-    if not upload_file or not upload_file.filename:
-        return jsonify({"error": "empty file"}), 400
+    if "file" in request.files:
+        upload_file = request.files["file"]
+        if not upload_file or not upload_file.filename:
+            return jsonify({"error": "empty file"}), 400
+        original_name = upload_file.filename
+        file_stream = upload_file.stream
+    else:
+        encoded_name = request.headers.get("X-File-Name", "")
+        if request.mimetype != "application/octet-stream" or not encoded_name:
+            return (
+                jsonify(
+                    {
+                        "error": (
+                            "use multipart key 'file', or send application/octet-stream "
+                            "with X-File-Name"
+                        )
+                    }
+                ),
+                400,
+            )
+        original_name = unquote(encoded_name)
+        file_stream = request.stream
 
     file_id, download_name = svc.create_upload(
-        original_name=upload_file.filename,
-        file_stream=upload_file.stream,
+        original_name=original_name,
+        file_stream=file_stream,
     )
 
     base = request.host_url.rstrip("/")

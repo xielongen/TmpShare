@@ -219,3 +219,27 @@ def test_setup_prompts_for_token_and_saves_it(tmp_path, monkeypatch, capsys):
     output = capsys.readouterr().out
     assert "Upload token: configured" in output
     assert "prompt-token" not in output
+
+
+def test_setup_reads_token_from_private_file(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    token_path = tmp_path / "upload-token"
+    token_path.write_text("file-token\n", encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "ishare",
+            "setup",
+            "https://share.example.test/",
+            "--token-file",
+            str(token_path),
+        ],
+    )
+
+    assert main() == 0
+    assert load_client_config() == ClientConfig(
+        url="https://share.example.test",
+        upload_token="file-token",
+    )
+    assert "file-token" not in capsys.readouterr().out
