@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote, urlsplit
 
-DEFAULT_URL = "https://ishare.xie-longen.workers.dev"
+DEFAULT_URL = "https://ishare.up2sky.top"
 
 
 @dataclass(frozen=True)

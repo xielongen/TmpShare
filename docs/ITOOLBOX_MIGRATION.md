@@ -50,7 +50,7 @@ The consolidation was completed on 2026-07-29:
 ## Current production deployment
 
 On 2026-07-29, `ishare` was deployed at
-`https://ishare.xie-longen.workers.dev`. New dedicated resources are named
+`https://ishare.up2sky.top`. New dedicated resources are named
 `ishare-files` and `ishare-metadata`; they do not reuse or recover any deleted Krypton
 data. Cloudflare R2 was preferred but could not be provisioned because it is not enabled
 for the account, so the deployed KV fallback intentionally limits files to 25 MiB.

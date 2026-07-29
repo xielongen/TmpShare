@@ -5,7 +5,7 @@ This directory is the production Cloudflare implementation of TmpShare.
 ## Live deployment
 
 - Worker: `ishare`
-- URL: `https://ishare.xie-longen.workers.dev`
+- URL: `https://ishare.up2sky.top`
 - File binding: KV namespace `ishare-files`
 - Metadata binding: D1 database `ishare-metadata` in APAC
 - Cleanup trigger: every minute
@@ -68,14 +68,14 @@ npx wrangler secret put UPLOAD_TOKEN
 Then update the local client through its hidden prompt:
 
 ```bash
-ishare setup https://ishare.xie-longen.workers.dev
+ishare setup https://ishare.up2sky.top
 ```
 
 ## Production smoke test
 
 ```bash
 ishare ./example.txt
-curl -L 'https://ishare.xie-longen.workers.dev/d/<token>' -o downloaded.file
+curl -L 'https://ishare.up2sky.top/d/<token>' -o downloaded.file
 ```
 
 Expected controls:

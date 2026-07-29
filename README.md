@@ -3,7 +3,7 @@
 临时文件分享服务。当前公网实例已经部署到 Cloudflare：
 
 ```text
-https://ishare.xie-longen.workers.dev
+https://ishare.up2sky.top
 ```
 
 日常只需执行：
@@ -36,7 +36,7 @@ ishare ./example.txt
 源码中的默认服务地址已经是上面的公网实例，因此无需记忆 `TMPSHARE_URL`。上传密钥不会硬编码进公开仓库；新电脑首次使用时执行一次：
 
 ```bash
-ishare setup https://ishare.xie-longen.workers.dev
+ishare setup https://ishare.up2sky.top
 # 根据隐藏提示输入上传密钥
 ```
 

@@ -12,7 +12,7 @@ TmpShare 是短生命周期文件传输服务，当前同时保留 Cloudflare �
 
 ## 公网 Cloudflare 架构
 
-`ishare.xie-longen.workers.dev` 使用以下资源：
+`ishare.up2sky.top` 使用以下资源：
 
 - Worker `ishare`：鉴权、流式上传、下载和主页。
 - KV `ishare-files`：短期文件内容，写入时设置 300 秒 TTL。

@@ -5,7 +5,7 @@
 当前公网地址：
 
 ```text
-https://ishare.xie-longen.workers.dev
+https://ishare.up2sky.top
 ```
 
 本机已经保存服务器地址和上传密钥后，日常命令只有一个：
@@ -20,7 +20,7 @@ ishare ./example.txt
 
 ```bash
 pipx install --editable .
-ishare setup https://ishare.xie-longen.workers.dev
+ishare setup https://ishare.up2sky.top
 ```
 
 根据隐藏提示输入上传密钥。配置保存在 `~/.config/ishare/config.json`，文件权限为 `600`。以后不需要记忆 `TMPSHARE_URL` 或 `TMPSHARE_UPLOAD_TOKEN`。
@@ -36,7 +36,7 @@ ishare config
 下载方不需要上传密钥：
 
 ```bash
-curl -L "https://ishare.xie-longen.workers.dev/d/<token>" -o downloaded.file
+curl -L "https://ishare.up2sky.top/d/<token>" -o downloaded.file
 ```
 
 完整下载链接本身就是临时凭证，拿到链接的人都能在有效期内下载，请勿发给无关人员。服务会返回随机文件名，不暴露上传时的原始名称。
@@ -72,7 +72,7 @@ ishare setup http://127.0.0.1:8080 --no-token
 `127.0.0.1:8080` 只指当前电脑上的服务，不能作为公网分享地址。恢复公网配置时再次执行：
 
 ```bash
-ishare setup https://ishare.xie-longen.workers.dev
+ishare setup https://ishare.up2sky.top
 ```
 
 ## 7. 常见问题
@@ -94,7 +94,7 @@ token 错误、链接已过期，或文件已清理。临时链接无法恢复�
 执行：
 
 ```bash
-ishare setup https://ishare.xie-longen.workers.dev
+ishare setup https://ishare.up2sky.top
 ```
 
 输入上传密钥后，本机将永久使用公网地址，除非被参数或环境变量临时覆盖。
