@@ -23,7 +23,7 @@ pipx install --editable .
 ishare setup https://ishare.up2sky.top
 ```
 
-根据隐藏提示输入上传密钥。配置保存在 `~/.config/ishare/config.json`，文件权限为 `600`。以后不需要记忆 `TMPSHARE_URL` 或 `TMPSHARE_UPLOAD_TOKEN`。
+根据隐藏提示输入上传密钥。配置保存在 `~/.config/ishare/config.json`，文件权限为 `600`。以后不需要记忆 `ISHARE_URL` 或 `ISHARE_UPLOAD_TOKEN`。
 
 ```bash
 ishare config

@@ -1,17 +1,17 @@
 # itoolbox consolidation record
 
-TmpShare is the canonical temporary file-transfer project. The former `itoolbox`
+ishare is the canonical temporary file-transfer project. The former `itoolbox`
 repository was a single-purpose Krypton prototype despite its generic name.
 
-## Kept in TmpShare
+## Kept in ishare
 
-- The one-argument file-upload command-line workflow, now provided by the same Python
-  package as both `tmpshare` and the easier-to-remember alias `ishare`.
+- The one-argument file-upload command-line workflow, provided by the `ishare` Python
+  package and command.
 - Streaming uploads in 1 MiB chunks instead of reading the whole file into memory.
 - An optional bearer token for upload authorization. Tokens come only from environment
   or command-line configuration; there is no built-in credential.
 - A five-minute default lifetime for files that have never been downloaded. This closes
-  TmpShare's previous unlimited retention path.
+  the previous unlimited retention path.
 - A Cloudflare-native public deployment path. It was reimplemented as a tested Worker
   with a dedicated KV namespace for short-lived file bodies and D1 for durable expiry
   metadata; it does not reuse the old Worker's source or credentials.
@@ -30,9 +30,9 @@ repository was a single-purpose Krypton prototype despite its generic name.
   transport, but neither project encrypts file contents end-to-end.
 - Generated JavaScript, dependency directories, and local credential files.
 
-Configuration now consistently uses `TMPSHARE_URL` and `TMPSHARE_UPLOAD_TOKEN`; the old
-Krypton command and environment-variable names were removed to avoid retaining a second
-product vocabulary.
+Configuration now consistently uses `ISHARE_URL` and `ISHARE_UPLOAD_TOKEN`; the old
+Krypton and TmpShare command, package, repository, service, and environment-variable
+names were removed to avoid retaining a second product vocabulary.
 
 ## Retirement status
 
@@ -44,8 +44,7 @@ The consolidation was completed on 2026-07-29:
   deployment-time calls and three maintenance probes over the preceding 27 days, with no
   user traffic.
 - Its dedicated `METADATA` and `DATA` KV namespaces were confirmed empty and deleted.
-- The old global npm link was replaced with this package's `tmpshare` and `ishare`
-  commands.
+- The old global npm link was replaced with the `ishare` command.
 
 ## Current production deployment
 

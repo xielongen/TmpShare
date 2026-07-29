@@ -1,6 +1,6 @@
-# TmpShare / ishare 技术说明
+# ishare 技术说明
 
-TmpShare 是短生命周期文件传输服务，当前同时保留 Cloudflare 生产实现和 Flask/VPS 实现，共用同一套 `ishare` 客户端协议。
+ishare 是短生命周期文件传输服务，当前同时保留 Cloudflare 生产实现和 Flask/VPS 实现，共用同一套客户端协议。
 
 ## 目标与边界
 
@@ -24,7 +24,7 @@ R2 是大文件的优选方案，但账户当前未启用 R2，因此生产实�
 
 ## Flask / VPS 架构
 
-Flask 实现将文件写入 `data/files/`，SQLite 保存元数据，后台线程和请求入口都会清理到期文件。systemd 服务名为 `secure-drop`。该实现默认上限 100 MiB，可由 `TMPSHARE_MAX_CONTENT_LENGTH` 调整。
+Flask 实现将文件写入 `data/files/`，SQLite 保存元数据，后台线程和请求入口都会清理到期文件。systemd 服务名为 `ishare`。该实现默认上限 100 MiB，可由 `ISHARE_MAX_CONTENT_LENGTH` 调整。
 
 `http://127.0.0.1:8080` 仅用于本机开发：`127.0.0.1` 指当前电脑自身，外部设备无法通过它访问。目前 `ishare` 的代码默认值和本机配置都指向 Cloudflare 公网实例。
 
@@ -47,7 +47,7 @@ X-File-Name: <URL-encoded-name>
 Flask 另外兼容 `multipart/form-data`，字段名为 `file`：
 
 ```bash
-curl -H "Authorization: Bearer ${TMPSHARE_UPLOAD_TOKEN}" \
+curl -H "Authorization: Bearer ${ISHARE_UPLOAD_TOKEN}" \
   -F "file=@./example.txt" http://127.0.0.1:8080/api/upload
 ```
 
@@ -70,7 +70,7 @@ upload
 
 - 本机：`~/.config/ishare/config.json`，目录 `700`、文件 `600`。
 - Cloudflare：加密的 Worker Secret `UPLOAD_TOKEN`。
-- Flask/VPS：`/etc/default/secure-drop` 的 `TMPSHARE_UPLOAD_TOKEN`。
+- Flask/VPS：`/etc/default/ishare` 的 `ISHARE_UPLOAD_TOKEN`。
 
 下载方不传 Bearer 密钥；任何拿到完整下载 URL 的人都能在有效期内下载。
 

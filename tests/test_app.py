@@ -7,9 +7,9 @@ from threading import Thread
 
 from werkzeug.serving import make_server
 
-from tmpshare.app import create_app
-from tmpshare.cli import ClientConfig, load_client_config, main, save_client_config, upload_file
-from tmpshare.config import Settings
+from ishare.app import create_app
+from ishare.cli import ClientConfig, load_client_config, main, save_client_config, upload_file
+from ishare.config import Settings
 
 
 def _build_settings(tmp_path, expire_seconds=60, unclaimed_expire_seconds=300, upload_token=None):
@@ -173,8 +173,8 @@ def test_ishare_uses_saved_config_without_environment_variables(tmp_path, monkey
     source.write_bytes(b"saved configuration")
     config_home = tmp_path / "client-config"
     monkeypatch.setenv("XDG_CONFIG_HOME", str(config_home))
-    monkeypatch.delenv("TMPSHARE_URL", raising=False)
-    monkeypatch.delenv("TMPSHARE_UPLOAD_TOKEN", raising=False)
+    monkeypatch.delenv("ISHARE_URL", raising=False)
+    monkeypatch.delenv("ISHARE_UPLOAD_TOKEN", raising=False)
     save_client_config(
         ClientConfig(
             url=f"http://127.0.0.1:{server.server_port}",
@@ -188,6 +188,29 @@ def test_ishare_uses_saved_config_without_environment_variables(tmp_path, monkey
         output = capsys.readouterr().out
         assert "http://127.0.0.1:" in output
         assert "saved-token" not in output
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+
+
+def test_ishare_environment_variables_override_saved_config(tmp_path, monkeypatch, capsys):
+    app = create_app(settings=_build_settings(tmp_path, upload_token="env-token"))
+    server = make_server("127.0.0.1", 0, app)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    source = tmp_path / "environment-config.txt"
+    source.write_bytes(b"environment configuration")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "client-config"))
+    save_client_config(ClientConfig(url="https://unused.example.test", upload_token="unused"))
+    monkeypatch.setenv("ISHARE_URL", f"http://127.0.0.1:{server.server_port}")
+    monkeypatch.setenv("ISHARE_UPLOAD_TOKEN", "env-token")
+    monkeypatch.setattr(sys, "argv", ["ishare", str(source)])
+
+    try:
+        assert main() == 0
+        output = capsys.readouterr().out
+        assert "http://127.0.0.1:" in output
+        assert "env-token" not in output
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -207,7 +230,7 @@ def test_config_command_never_prints_token(tmp_path, monkeypatch, capsys):
 def test_setup_prompts_for_token_and_saves_it(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
-    monkeypatch.setattr("tmpshare.cli.getpass.getpass", lambda _: "prompt-token")
+    monkeypatch.setattr("ishare.cli.getpass.getpass", lambda _: "prompt-token")
     monkeypatch.setattr(sys, "argv", ["ishare", "setup", "https://share.example.test/"])
 
     assert main() == 0

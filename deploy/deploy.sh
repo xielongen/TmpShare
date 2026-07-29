@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="/opt/secure-drop"
-SERVICE_NAME="secure-drop"
-SERVICE_USER="secure-drop"
+APP_DIR="/opt/ishare"
+SERVICE_NAME="ishare"
+SERVICE_USER="ishare"
 PYTHON_BIN="${PYTHON_BIN:-python3.11}"
-ENV_FILE="/etc/default/secure-drop"
+ENV_FILE="/etc/default/ishare"
 
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   echo "[ERROR] ${PYTHON_BIN} not found. Please install Python 3.11+ first."
@@ -36,12 +36,12 @@ sudo -u "${SERVICE_USER}" "${APP_DIR}/.venv/bin/pip" install --upgrade pip
 sudo -u "${SERVICE_USER}" "${APP_DIR}/.venv/bin/pip" install -r "${APP_DIR}/requirements.txt"
 
 echo "[4/8] Install systemd service"
-sudo cp deploy/secure-drop.service "/etc/systemd/system/${SERVICE_NAME}.service"
+sudo cp deploy/ishare.service "/etc/systemd/system/${SERVICE_NAME}.service"
 sudo systemctl daemon-reload
 
 echo "[5/8] Install environment config if missing"
 if [ ! -f "${ENV_FILE}" ]; then
-  sudo cp deploy/secure-drop.env.example "${ENV_FILE}"
+  sudo cp deploy/ishare.env.example "${ENV_FILE}"
 fi
 
 echo "[6/8] Restart and enable service"

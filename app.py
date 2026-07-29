@@ -1,5 +1,5 @@
 from flask import Flask
-from src.tmpshare.app import create_app
+from src.ishare.app import create_app
 
 app: Flask = create_app()
 

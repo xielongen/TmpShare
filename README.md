@@ -1,4 +1,4 @@
-# TmpShare / ishare
+# ishare
 
 临时文件分享服务。当前公网实例已经部署到 Cloudflare：
 
@@ -33,14 +33,14 @@ ishare config
 ishare ./example.txt
 ```
 
-源码中的默认服务地址已经是上面的公网实例，因此无需记忆 `TMPSHARE_URL`。上传密钥不会硬编码进公开仓库；新电脑首次使用时执行一次：
+源码中的默认服务地址已经是上面的公网实例，因此无需记忆 `ISHARE_URL`。上传密钥不会硬编码进公开仓库；新电脑首次使用时执行一次：
 
 ```bash
 ishare setup https://ishare.up2sky.top
 # 根据隐藏提示输入上传密钥
 ```
 
-自动化环境仍可用 `--url`、`--token`、`TMPSHARE_URL` 和 `TMPSHARE_UPLOAD_TOKEN` 临时覆盖本机配置。安全脚本可通过 `ishare setup <url> --token-file <path>` 避免把密钥放进进程参数。
+自动化环境仍可用 `--url`、`--token`、`ISHARE_URL` 和 `ISHARE_UPLOAD_TOKEN` 临时覆盖本机配置。安全脚本可通过 `ishare setup <url> --token-file <path>` 避免把密钥放进进程参数。
 
 ## 两种服务端实现
 
@@ -72,7 +72,7 @@ ishare setup http://127.0.0.1:8080 --no-token
 ishare ./example.txt
 ```
 
-这里的 `127.0.0.1:8080` 只表示当前电脑上的 Flask 开发服务，不是公网地址。VPS 可执行 `bash deploy/deploy.sh` 安装为 `secure-drop` systemd 服务；生产口令放在 `/etc/default/secure-drop`，不要写入 Git。
+这里的 `127.0.0.1:8080` 只表示当前电脑上的 Flask 开发服务，不是公网地址。VPS 可执行 `bash deploy/deploy.sh` 安装为 `ishare` systemd 服务；生产口令放在 `/etc/default/ishare`，不要写入 Git。
 
 ## API
 
@@ -94,7 +94,7 @@ GitHub Actions 同时检查 Python/Flask 和 Cloudflare Worker。
 
 ## 项目结构
 
-- `src/tmpshare/`：Flask 服务和 `ishare` 客户端。
+- `src/ishare/`：Flask 服务和 `ishare` 客户端。
 - `cloudflare/`：当前公网 Worker、KV/D1 配置、迁移和运行时测试。
 - `deploy/`：VPS systemd 部署。
 - `tests/`、`cloudflare/test/`：两套实现的自动化测试。

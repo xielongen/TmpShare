@@ -30,11 +30,11 @@ def _int_env(name: str, default: int) -> int:
 
 def load_settings(app_dir: Path | None = None) -> Settings:
     resolved_app_dir = (app_dir or Path(__file__).resolve().parents[2]).resolve()
-    data_dir = Path(os.getenv("TMPSHARE_DATA_DIR", str(resolved_app_dir / "data"))).resolve()
+    data_dir = Path(os.getenv("ISHARE_DATA_DIR", str(resolved_app_dir / "data"))).resolve()
     files_dir = (data_dir / "files").resolve()
-    db_path = Path(os.getenv("TMPSHARE_DB_PATH", str(data_dir / "meta.db"))).resolve()
+    db_path = Path(os.getenv("ISHARE_DB_PATH", str(data_dir / "meta.db"))).resolve()
     home_page_path = Path(
-        os.getenv("TMPSHARE_HOME_PAGE_PATH", str(resolved_app_dir / "CLICKHOUSE_HOME.html"))
+        os.getenv("ISHARE_HOME_PAGE_PATH", str(resolved_app_dir / "CLICKHOUSE_HOME.html"))
     ).resolve()
 
     return Settings(
@@ -43,11 +43,11 @@ def load_settings(app_dir: Path | None = None) -> Settings:
         files_dir=files_dir,
         db_path=db_path,
         home_page_path=home_page_path,
-        expire_seconds=max(_int_env("TMPSHARE_EXPIRE_SECONDS", 60), 1),
-        unclaimed_expire_seconds=max(_int_env("TMPSHARE_UNCLAIMED_EXPIRE_SECONDS", 5 * 60), 1),
-        cleanup_interval_seconds=max(_int_env("TMPSHARE_CLEANUP_INTERVAL_SECONDS", 15), 1),
-        max_content_length=max(_int_env("TMPSHARE_MAX_CONTENT_LENGTH", 100 * 1024 * 1024), 1),
-        enable_background_cleanup=os.getenv("TMPSHARE_ENABLE_BG_CLEANUP", "true").lower()
+        expire_seconds=max(_int_env("ISHARE_EXPIRE_SECONDS", 60), 1),
+        unclaimed_expire_seconds=max(_int_env("ISHARE_UNCLAIMED_EXPIRE_SECONDS", 5 * 60), 1),
+        cleanup_interval_seconds=max(_int_env("ISHARE_CLEANUP_INTERVAL_SECONDS", 15), 1),
+        max_content_length=max(_int_env("ISHARE_MAX_CONTENT_LENGTH", 100 * 1024 * 1024), 1),
+        enable_background_cleanup=os.getenv("ISHARE_ENABLE_BG_CLEANUP", "true").lower()
         in {"1", "true", "yes", "on"},
-        upload_token=os.getenv("TMPSHARE_UPLOAD_TOKEN", "").strip() or None,
+        upload_token=os.getenv("ISHARE_UPLOAD_TOKEN", "").strip() or None,
     )

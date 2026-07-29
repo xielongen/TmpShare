@@ -128,17 +128,17 @@ def upload_file(
 def _parser(config: ClientConfig) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog=Path(sys.argv[0]).name,
-        description="Upload a file to a TmpShare server and print its temporary download link.",
+        description="Upload a file to an ishare server and print its temporary download link.",
     )
     parser.add_argument("file", type=Path, help="file to upload")
     parser.add_argument(
         "--url",
-        default=os.getenv("TMPSHARE_URL") or config.url,
-        help="override the saved TmpShare URL",
+        default=os.getenv("ISHARE_URL") or config.url,
+        help="override the saved ishare URL",
     )
     parser.add_argument(
         "--token",
-        default=os.getenv("TMPSHARE_UPLOAD_TOKEN") or config.upload_token,
+        default=os.getenv("ISHARE_UPLOAD_TOKEN") or config.upload_token,
         help="override the saved upload token",
     )
     parser.add_argument("--timeout", type=int, default=120, help="request timeout in seconds")
@@ -151,7 +151,7 @@ def _setup(argv: list[str]) -> int:
         prog=f"{Path(sys.argv[0]).name} setup",
         description="Save the server URL and upload token for future uploads.",
     )
-    parser.add_argument("url", nargs="?", default=current.url, help="TmpShare base URL")
+    parser.add_argument("url", nargs="?", default=current.url, help="ishare base URL")
     token_group = parser.add_mutually_exclusive_group()
     token_group.add_argument("--token", help="upload token (prefer the hidden prompt)")
     token_group.add_argument(

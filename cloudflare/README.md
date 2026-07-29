@@ -1,6 +1,6 @@
 # ishare Cloudflare deployment
 
-This directory is the production Cloudflare implementation of TmpShare.
+This directory is the production Cloudflare implementation of ishare.
 
 ## Live deployment
 

@@ -1,0 +1,19 @@
+[Unit]
+Description=ishare temporary file service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ishare
+EnvironmentFile=-/etc/default/ishare
+ExecStart=/opt/ishare/.venv/bin/gunicorn --workers 2 --bind 0.0.0.0:8080 app:app
+Restart=always
+RestartSec=3
+User=ishare
+Group=ishare
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

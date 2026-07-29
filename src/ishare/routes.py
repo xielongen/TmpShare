@@ -112,6 +112,6 @@ def start_cleanup_worker(service: FileService) -> threading.Thread:
                 pass
             time.sleep(service.settings.cleanup_interval_seconds)
 
-    thread = threading.Thread(target=runner, daemon=True, name="tmpshare-cleaner")
+    thread = threading.Thread(target=runner, daemon=True, name="ishare-cleaner")
     thread.start()
     return thread
